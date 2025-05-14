@@ -59,47 +59,61 @@
 
   <div class="form">
     <input type="text" id="userMessage" placeholder="Your message here..." />
-    <button id="submitButton" onclick="submitMessage()">Submit</button>
+    <button id="submitBtn" onclick="submitMessage()">Submit</button>
   </div>
 
   <script>
-    const button = document.getElementById('submitButton');
-    const input = document.getElementById('userMessage');
-
-    // Проверяем, есть ли информация о блокировке кнопки
-    const lockTime = localStorage.getItem('lockTime');
-    if (lockTime && Date.now() < lockTime) {
-      const remainingTime = lockTime - Date.now();
-      disableButton(remainingTime);
-    }
+    // Проверяем состояние кнопки при загрузке страницы
+    window.onload = () => {
+      const timeout = localStorage.getItem('timeout');
+      const now = new Date().getTime();
+      if (timeout && now < timeout) {
+        disableButton((timeout - now) / 1000);
+      }
+    };
 
     async function submitMessage() {
+      const input = document.getElementById('userMessage');
       const message = input.value.trim();
       if (!message) return;
-
+      
       input.disabled = true;
-      button.disabled = true;
-
-      const lockUntil = Date.now() + 60000; // 60 секунд блокировки
-      localStorage.setItem('lockTime', lockUntil); // Сохраняем время блокировки
-
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      
+      // Отправка сообщения
       await fetch('/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message })
       });
-
+      
       input.value = '';
-      disableButton(60000); // Блокируем кнопку на 60 секунд
+      
+      // Блокируем кнопку на 60 секунд
+      const timeout = new Date().getTime() + 60000; // 60 секунд
+      localStorage.setItem('timeout', timeout);  // Сохраняем время блокировки в localStorage
+
+      disableButton(60);  // Ожидание 60 секунд до разблокировки
     }
 
-    function disableButton(time) {
-      button.disabled = true;
-      setTimeout(() => {
-        button.disabled = false;
-        input.disabled = false;
-        localStorage.removeItem('lockTime'); // Очищаем состояние блокировки после времени
-      }, time);
+    // Функция для отключения кнопки и отображения оставшегося времени
+    function disableButton(remainingTime) {
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerText = `Please wait... (${Math.round(remainingTime)}s)`;
+
+      let interval = setInterval(() => {
+        remainingTime -= 1;
+        btn.innerText = `Please wait... (${Math.round(remainingTime)}s)`;
+
+        if (remainingTime <= 0) {
+          clearInterval(interval);
+          btn.disabled = false;
+          btn.innerText = 'Submit';
+          localStorage.removeItem('timeout');  // Убираем информацию о времени из localStorage
+        }
+      }, 1000);
     }
   </script>
 </body>
