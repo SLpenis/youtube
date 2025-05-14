@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello</title>
+    <style>
+        body {
+            background: #111;
+            color: #eee;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+        h1 {
+            font-size: 4em;
+            margin-bottom: 0.2em;
+        }
+        h2 {
+            font-size: 1.5em;
+            max-width: 800px;
+        }
+        p {
+            font-size: 0.9em;
+            max-width: 700px;
+            margin-top: 1em;
+        }
+        #form {
+            display: flex;
+            margin-top: 1em;
+        }
+        input {
+            width: 300px;
+            padding: 0.5em;
+            font-size: 1em;
+        }
+        button {
+            padding: 0.5em;
+            background: #0af;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: gray;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hello</h1>
+    <h2>Thanks for submitting your personal data including ip adress, device name, browser, operating sistem, country and your cookie files. We definitely won't use any of this information in bad purposes. We will not try to impersonalise you, manipulate or ddos your devices and we will not store and sell this data to frauds.</h2>
+    <p>If you want us to remove stored information, want to get technical support or deliver us your very important message please leave your contact information as well as the message in the field below and click the submit button</p>
+    <div id="form">
+        <input type="text" id="message" placeholder="Your message...">
+        <button id="submit">Submit</button>
+    </div>
+    <script>
+        fetch('/collect');
+
+        const btn = document.getElementById('submit');
+        btn.addEventListener('click', () => {
+            const msg = document.getElementById('message').value;
+            btn.disabled = true;
+            fetch('/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg })
+            }).then(res => {
+                if (!res.ok) alert("Wait before sending again!");
+                setTimeout(() => btn.disabled = false, 60000);
+            });
+        });
+    </script>
+</body>
+</html>
