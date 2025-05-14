@@ -20,6 +20,7 @@
     h1 {
       font-size: 48px;
       margin-bottom: 6px;
+      margin-top: 0;
     }
     h2 {
       font-size: 20px;
@@ -37,6 +38,7 @@
       display: flex;
       width: 100%;
       max-width: 600px;
+      margin-top: 20px;
     }
     .form input {
       flex-grow: 1;
@@ -52,8 +54,8 @@
 </head>
 <body>
   <h1>Hello, Dear user!</h1>
-  <h2>Thanks for submitting your personal data including ip adress, device name, browser, operating sistem, country and your cookie files. We definitely won't use any of this information in bad purposes. We will not try to impersonalise you, manipulate or ddos your devices and we will not store and sell this data to frauds.</h2>
-  <p>If you want us to remove stored information, want to get technical support or deliver us your very important message please leave your contact information as well as the message in the field below and click the submit button</p>
+  <h2>Thank you for providing your personal information, including your IP address, device name, browser, operating system, country, and cookie files. Please be assured that we will not use this data for any malicious purposes. We have no intention of attempting to impersonate you, manipulate your devices, or engage in any harmful activities. Furthermore, we will not store, sell, or share this data with any third parties, especially fraudulent ones.</h2>
+  <p>If you would like us to remove your stored information, require technical support, or wish to send us your very important message, please provide your contact details and message in the field below, and click the "Submit" button.</p>
 
   <div class="form">
     <input type="text" id="userMessage" placeholder="Your message here..." />
@@ -79,7 +81,7 @@
       setTimeout(() => {
         input.disabled = false;
         btn.disabled = false;
-      }, 60000);
+      }, 60000); // 60 секунд блокировки
     }
   </script>
 </body>
