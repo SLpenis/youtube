@@ -54,34 +54,52 @@
 </head>
 <body>
   <h1>Hello, Dear user!</h1>
-  <h2>Thank you for providing your personal information, including your IP address, device name, browser, operating system, country, and cookie files. Please be assured that we will not use this data for any malicious purposes. We have no intention of attempting to impersonate you or ddos attack your devices. Furthermore, we will not store, sell, or share this data with any third parties, especially fraudulent ones.</h2>
+  <h2>Thank you for providing your personal information, including your IP address, device name, browser, operating system, country, and cookie files. Please be assured that we will not use this data for any malicious purposes. We have no intention of attempting to impersonate you or ddos attack your device. Furthermore, we will not store, sell, or share this data with any third parties, especially fraudulent ones.</h2>
   <p>If you would like us to remove your stored information, require technical support, or wish to send us your very important message, please provide your contact details and message in the field below, and click the "Submit" button.</p>
 
   <div class="form">
     <input type="text" id="userMessage" placeholder="Your message here..." />
-    <button onclick="submitMessage()">Submit</button>
+    <button id="submitButton" onclick="submitMessage()">Submit</button>
   </div>
 
   <script>
-    fetch('/collect');
+    const button = document.getElementById('submitButton');
+    const input = document.getElementById('userMessage');
+
+    // Проверяем, есть ли информация о блокировке кнопки
+    const lockTime = localStorage.getItem('lockTime');
+    if (lockTime && Date.now() < lockTime) {
+      const remainingTime = lockTime - Date.now();
+      disableButton(remainingTime);
+    }
 
     async function submitMessage() {
-      const input = document.getElementById('userMessage');
       const message = input.value.trim();
       if (!message) return;
+
       input.disabled = true;
-      const btn = document.querySelector('button');
-      btn.disabled = true;
+      button.disabled = true;
+
+      const lockUntil = Date.now() + 60000; // 60 секунд блокировки
+      localStorage.setItem('lockTime', lockUntil); // Сохраняем время блокировки
+
       await fetch('/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message })
       });
+
       input.value = '';
+      disableButton(60000); // Блокируем кнопку на 60 секунд
+    }
+
+    function disableButton(time) {
+      button.disabled = true;
       setTimeout(() => {
+        button.disabled = false;
         input.disabled = false;
-        btn.disabled = false;
-      }, 60000); // 60 секунд блокировки
+        localStorage.removeItem('lockTime'); // Очищаем состояние блокировки после времени
+      }, time);
     }
   </script>
 </body>
