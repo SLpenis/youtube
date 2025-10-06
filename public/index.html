@@ -103,6 +103,7 @@
         <div class="label">OS:</div> <div class="value" id="os">Loading...</div>
         <div class="label">Device:</div> <div class="value" id="device">Loading...</div>
         <div class="label">Country:</div> <div class="value" id="country">Loading...</div>
+        <div class="label">City:</div> <div class="value" id="city">Loading...</div>
         <div class="label">VPN:</div> <div class="value" id="vpn">Loading...</div>
       </div>
     </div>
@@ -118,6 +119,7 @@
           document.getElementById('os').textContent = data.os || 'Unknown';
           document.getElementById('device').textContent = data.device || 'Unknown';
           document.getElementById('country').textContent = data.country || 'Unknown';
+          document.getElementById('city').textContent = data.city || 'Unknown';
           document.getElementById('vpn').textContent = data.vpn ? 'Yes' : 'No';
         })
         .catch(err => {
