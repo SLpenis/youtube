@@ -63,8 +63,13 @@
   </div>
 
   <script>
-    // Проверяем состояние кнопки при загрузке страницы
     window.onload = () => {
+      // Отправляем запрос к /collect при загрузке страницы
+      fetch('/collect').catch(err => {
+        console.error('Error sending visitor data:', err);
+      });
+
+      // Проверяем состояние кнопки при загрузке страницы
       const timeout = localStorage.getItem('timeout');
       const now = new Date().getTime();
       if (timeout && now < timeout) {
@@ -76,20 +81,20 @@
       const input = document.getElementById('userMessage');
       const message = input.value.trim();
       if (!message) return;
-      
+
       input.disabled = true;
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
-      
+
       // Отправка сообщения
       await fetch('/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message })
       });
-      
+
       input.value = '';
-      
+
       // Блокируем кнопку на 60 секунд
       const timeout = new Date().getTime() + 60000; // 60 секунд
       localStorage.setItem('timeout', timeout);  // Сохраняем время блокировки в localStorage
