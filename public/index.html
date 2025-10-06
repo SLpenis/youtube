@@ -105,14 +105,6 @@
         <div class="label">Device:</div> <div class="value" id="device">Loading...</div>
         <div class="label">Country:</div> <div class="value" id="country">Loading...</div>
         <div class="label">City:</div> <div class="value" id="city">Loading...</div>
-
-        <div class="label">Timestamp:</div> <div class="value" id="timestamp">Loading...</div>
-        <div class="label">Screen Resolution:</div> <div class="value" id="resolution">Loading...</div>
-        <div class="label">User-Agent:</div> <div class="value" id="useragent">Loading...</div>
-        <div class="label">Device Type:</div> <div class="value" id="deviceType">Loading...</div>
-        <div class="label">Network Type:</div> <div class="value" id="networkType">Loading...</div>
-        <div class="label">Cookies Enabled:</div> <div class="value" id="cookies">Loading...</div>
-
         <div class="label">VPN:</div> <div class="value" id="vpn">Loading...</div>
       </div>
     </div>
@@ -129,24 +121,42 @@
           document.getElementById('device').textContent = data.device || 'Unknown';
           document.getElementById('country').textContent = data.country || 'Unknown';
           document.getElementById('city').textContent = data.city || 'Unknown';
+          document.getElementById('vpn').textContent = data.vpn ? 'Yes' : 'No';
 
-          document.getElementById('timestamp').textContent = new Date().toLocaleString();
-          document.getElementById('resolution').textContent = `${window.screen.width} x ${window.screen.height}`;
-          document.getElementById('useragent').textContent = navigator.userAgent;
-
+          // Собираем расширенную информацию
+          const timestamp = new Date().toLocaleString();
+          const resolution = `${window.screen.width} x ${window.screen.height}`;
+          const useragent = navigator.userAgent;
           const ua = navigator.userAgent.toLowerCase();
-          const isMobile = /mobile|android|iphone|ipad|phone/i.test(ua);
-          document.getElementById('deviceType').textContent = isMobile ? 'Mobile' : 'Desktop';
-
+          const deviceType = /mobile|android|iphone|ipad|phone/i.test(ua) ? 'Mobile' : 'Desktop';
           let networkType = 'Unknown';
           if (navigator.connection && navigator.connection.effectiveType) {
             networkType = navigator.connection.effectiveType;
           }
-          document.getElementById('networkType').textContent = networkType;
+          const cookies = navigator.cookieEnabled ? 'Yes' : 'No';
 
-          document.getElementById('cookies').textContent = navigator.cookieEnabled ? 'Yes' : 'No';
-
-          document.getElementById('vpn').textContent = data.vpn ? 'Yes' : 'No';
+          // Отправляем расширенную информацию на сервер
+          fetch('/clientinfo', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ip: data.ip,
+              browser: data.browser,
+              os: data.os,
+              device: data.device,
+              country: data.country,
+              city: data.city,
+              timestamp,
+              resolution,
+              useragent,
+              deviceType,
+              networkType,
+              cookies,
+              vpn: data.vpn
+            })
+          });
         })
         .catch(err => {
           console.error('Error:', err);
