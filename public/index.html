@@ -125,6 +125,8 @@
         })
         .catch(err => {
           console.error('Error fetching visitor info:', err);
+          const elems = ['ip','browser','os','device','country','city','vpn'];
+          elems.forEach(id => document.getElementById(id).textContent = 'Unknown');
         });
     });
   </script>
