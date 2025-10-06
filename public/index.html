@@ -2,124 +2,98 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitor Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Visitor Info</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
     body {
-      background-color: #000;
-      color: #fff;
-      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #000;
+      color: #888;
+      font-family: 'Share Tech Mono', monospace;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
-      min-height: 100vh;
+      align-items: center;
+      height: 100vh;
       text-align: center;
-      padding: 0 20px;
+      user-select: none;
     }
-    h1 {
-      font-size: 48px;
-      margin-bottom: 6px;
-      margin-top: 0;
-    }
-    h2 {
-      font-size: 20px;
-      margin-bottom: 6px;
-      max-width: 700px;
-      line-height: 1.3;
-    }
-    p {
-      font-size: 14px;
-      margin-bottom: 12px;
+
+    .container {
       max-width: 600px;
-      line-height: 1.3;
+      padding: 20px;
     }
-    .form {
-      display: flex;
-      width: 100%;
-      max-width: 600px;
-      margin-top: 20px;
+
+    .title {
+      color: #eee;
+      font-size: 36px;
+      letter-spacing: 4px;
+      margin-bottom: 30px;
+      font-weight: bold;
+      text-shadow: 0 0 5px #555;
     }
-    .form input {
-      flex-grow: 1;
-      padding: 10px;
-      font-size: 14px;
+
+    .visitor-info {
+      font-size: 18px;
+      line-height: 1.6;
+      color: #aaa;
+      white-space: pre-line;
+      border: 1px solid #444;
+      padding: 20px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 0 15px #111 inset;
+      user-select: text;
     }
-    .form button {
-      padding: 10px 20px;
-      font-size: 14px;
-      cursor: pointer;
+
+    .highlight {
+      color: #eee;
+      font-weight: bold;
+    }
+
+    .footer {
+      margin-top: 40px;
+      font-size: 12px;
+      color: #444;
+      letter-spacing: 1.5px;
+      user-select: none;
     }
   </style>
 </head>
 <body>
-  <h1>Hello, Dear user!</h1>
-  <h2>Thank you for providing your personal information, including your IP address, device name, browser, operating system, country, and your personal cookie files. Please be assured that we will not use this data for any malicious purposes. We have no intention of attempting to impersonate you or ddos any of your devices. Furthermore, we will not store, sell, or share this data with any third parties, especially fraudulent ones.</h2>
-  <p>If you would like us to remove your stored information, require technical support, or wish to send us your very important message, please provide your contact details and message in the field below, and click the "Submit" button.</p>
-
-  <div class="form">
-    <input type="text" id="userMessage" placeholder="Your message here..." />
-    <button id="submitBtn" onclick="submitMessage()">Submit</button>
+  <div class="container">
+    <div class="title">DOXBIN</div>
+    <div id="visitorInfo" class="visitor-info">
+      Loading visitor data...
+    </div>
+    <div class="footer">27-5-2024</div>
   </div>
 
   <script>
-    window.onload = () => {
-      // Отправляем запрос к /collect при загрузке страницы
-      fetch('/collect').catch(err => {
-        console.error('Error sending visitor data:', err);
-      });
-
-      // Проверяем состояние кнопки при загрузке страницы
-      const timeout = localStorage.getItem('timeout');
-      const now = new Date().getTime();
-      if (timeout && now < timeout) {
-        disableButton((timeout - now) / 1000);
-      }
+    // Заглушки с данными — заменить на реальные данные с сервера, если нужно
+    const visitorData = {
+      ip: '45.132.93.240',
+      browser: 'Chrome',
+      os: 'Windows 10.0',
+      device: 'Microsoft Windows',
+      country: 'Ukraine',
+      vpn: 'No'
     };
 
-    async function submitMessage() {
-      const input = document.getElementById('userMessage');
-      const message = input.value.trim();
-      if (!message) return;
+    const visitorText = `
+New visitor:
+IP: ${visitorData.ip}
+Browser: ${visitorData.browser}
+OS: ${visitorData.os}
+Device: ${visitorData.device}
+Country: ${visitorData.country}
+VPN: ${visitorData.vpn}
+    `.trim();
 
-      input.disabled = true;
-      const btn = document.getElementById('submitBtn');
-      btn.disabled = true;
-
-      // Отправка сообщения
-      await fetch('/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
-      });
-
-      input.value = '';
-
-      // Блокируем кнопку на 60 секунд
-      const timeout = new Date().getTime() + 60000; // 60 секунд
-      localStorage.setItem('timeout', timeout);  // Сохраняем время блокировки в localStorage
-
-      disableButton(60);  // Ожидание 60 секунд до разблокировки
-    }
-
-    // Функция для отключения кнопки и отображения оставшегося времени
-    function disableButton(remainingTime) {
-      const btn = document.getElementById('submitBtn');
-      btn.disabled = true;
-      btn.innerText = `Please wait... (${Math.round(remainingTime)}s)`;
-
-      let interval = setInterval(() => {
-        remainingTime -= 1;
-        btn.innerText = `Please wait... (${Math.round(remainingTime)}s)`;
-
-        if (remainingTime <= 0) {
-          clearInterval(interval);
-          btn.disabled = false;
-          btn.innerText = 'Submit';
-          localStorage.removeItem('timeout');  // Убираем информацию о времени из localStorage
-        }
-      }, 1000);
-    }
+    // Отобразить данные на странице
+    document.getElementById('visitorInfo').innerText = visitorText;
   </script>
 </body>
 </html>
