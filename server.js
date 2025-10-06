@@ -15,12 +15,11 @@ app.use(requestIp.mw());
 
 const submittedIPs = new Map();
 
+// Статика — папка public с index.html и прочим
 app.use(express.static('public'));
 
 app.get('/collect', async (req, res) => {
-  // Попытка взять IP из заголовков, если сервер стоит за прокси
   let ip = req.clientIp || '';
-  // Если есть заголовок X-Forwarded-For
   if (req.headers['x-forwarded-for']) {
     const parts = req.headers['x-forwarded-for'].split(',').map(s => s.trim());
     if (parts.length > 0 && parts[0]) {
@@ -32,13 +31,11 @@ app.get('/collect', async (req, res) => {
   const browser = ua.browser || 'Unknown';
   const os = ua.os || 'Unknown';
   const device = ua.platform || 'Unknown';
-  const isVpn = false;
 
   let country = 'Unknown';
   let city = 'Unknown';
 
   try {
-    // Передаём IP в запрос геолокации
     const geo = await axios.get(`http://ip-api.com/json/${ip}`);
     if (geo.data) {
       country = geo.data.country || country;
@@ -47,6 +44,9 @@ app.get('/collect', async (req, res) => {
   } catch (err) {
     console.error('Geo API error:', err.message);
   }
+
+  // Пока нет реальной VPN проверки — false
+  const isVpn = false;
 
   const wasHere = submittedIPs.has(ip);
   submittedIPs.set(ip, Date.now());
