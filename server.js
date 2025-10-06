@@ -15,33 +15,36 @@ app.use(requestIp.mw());
 
 const submittedIPs = new Map();
 
-// Главная страница — статика
+// Статические файлы (твоя HTML-страница)
 app.use(express.static('public'));
 
-// Получение IP и user-agent
+// Сбор инфы о пользователе
 app.get('/collect', async (req, res) => {
-    const ip = req.clientIp;
-    const ua = req.useragent;
-    const browser = ua.browser;
-    const os = ua.os;
-    const device = ua.platform;
-    const isVpn = false; // Упрощение: не определяем VPN
+  const ip = req.clientIp;
+  const ua = req.useragent;
 
-    let country = 'Unknown';
-    let city = 'Unknown';
+  const browser = ua.browser || 'Unknown';
+  const os = ua.os || 'Unknown';
+  const device = ua.platform || 'Unknown';
+  const isVpn = false;
 
-    try {
-        const geo = await axios.get(`http://ip-api.com/json/${ip}`);
-        country = geo.data.country || 'Unknown';
-        city = geo.data.city || 'Unknown';
-    } catch (error) {
-        console.error('Geo API error:', error.message);
-    }
+  let country = 'Unknown';
+  let city = 'Unknown';
 
-    const wasHere = submittedIPs.has(ip);
-    submittedIPs.set(ip, Date.now());
+  try {
+    // Используем auto-detection IP API
+    const geo = await axios.get(`http://ip-api.com/json/`);
+    country = geo.data.country || 'Unknown';
+    city = geo.data.city || 'Unknown';
+  } catch (err) {
+    console.error('Geo API error:', err.message);
+  }
 
-    const message = `
+  // Логика "повторного визита"
+  const wasHere = submittedIPs.has(ip);
+  submittedIPs.set(ip, Date.now());
+
+  const message = `
 New visitor:
 IP: ${ip}
 Browser: ${browser}
@@ -51,37 +54,48 @@ Country: ${country}
 City: ${city}
 VPN: ${isVpn ? 'Yes' : 'No'}
 ${wasHere ? 'User has already visited.' : ''}
-    `;
+`;
 
-    try {
-        await axios.post(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
-            chat_id: process.env.CHAT_ID,
-            text: message
-        });
-    } catch (error) {
-        console.error('Telegram API error:', error.message);
-    }
+  // Отправка в Telegram
+  try {
+    await axios.post(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
+      chat_id: process.env.CHAT_ID,
+      text: message
+    });
+  } catch (err) {
+    console.error('Telegram API error:', err.message);
+  }
 
-    res.json({ success: true });
+  // 🔥 Возвращаем данные во фронтенд
+  res.json({
+    success: true,
+    ip,
+    browser,
+    os,
+    device,
+    country,
+    city,
+    vpn: isVpn
+  });
 });
 
-// Отправка сообщения вручную
+// Приём сообщений от пользователя
 app.post('/submit', async (req, res) => {
-    const ip = req.clientIp;
-    const text = req.body.message || '';
+  const ip = req.clientIp;
+  const text = req.body.message || '';
 
-    try {
-        await axios.post(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
-            chat_id: process.env.CHAT_ID,
-            text: `New message from ${ip}:\n${text}`
-        });
-    } catch (error) {
-        console.error('Telegram API error:', error.message);
-    }
+  try {
+    await axios.post(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
+      chat_id: process.env.CHAT_ID,
+      text: `New message from ${ip}:\n${text}`
+    });
+  } catch (err) {
+    console.error('Telegram API error:', err.message);
+  }
 
-    res.json({ success: true });
+  res.json({ success: true });
 });
 
 app.listen(port, () => {
-    console.log(`✅ Server running on port ${port}`);
+  console.log(`✅ Server running on port ${port}`);
 });
