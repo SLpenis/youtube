@@ -15,14 +15,20 @@ app.use(requestIp.mw());
 
 const submittedIPs = new Map();
 
-// Статические файлы (твоя HTML-страница)
 app.use(express.static('public'));
 
-// Сбор инфы о пользователе
 app.get('/collect', async (req, res) => {
-  const ip = req.clientIp;
-  const ua = req.useragent;
+  // Попытка взять IP из заголовков, если сервер стоит за прокси
+  let ip = req.clientIp || '';
+  // Если есть заголовок X-Forwarded-For
+  if (req.headers['x-forwarded-for']) {
+    const parts = req.headers['x-forwarded-for'].split(',').map(s => s.trim());
+    if (parts.length > 0 && parts[0]) {
+      ip = parts[0];
+    }
+  }
 
+  const ua = req.useragent || {};
   const browser = ua.browser || 'Unknown';
   const os = ua.os || 'Unknown';
   const device = ua.platform || 'Unknown';
@@ -32,15 +38,16 @@ app.get('/collect', async (req, res) => {
   let city = 'Unknown';
 
   try {
-    // Используем auto-detection IP API
-    const geo = await axios.get(`http://ip-api.com/json/`);
-    country = geo.data.country || 'Unknown';
-    city = geo.data.city || 'Unknown';
+    // Передаём IP в запрос геолокации
+    const geo = await axios.get(`http://ip-api.com/json/${ip}`);
+    if (geo.data) {
+      country = geo.data.country || country;
+      city = geo.data.city || city;
+    }
   } catch (err) {
     console.error('Geo API error:', err.message);
   }
 
-  // Логика "повторного визита"
   const wasHere = submittedIPs.has(ip);
   submittedIPs.set(ip, Date.now());
 
@@ -56,7 +63,6 @@ VPN: ${isVpn ? 'Yes' : 'No'}
 ${wasHere ? 'User has already visited.' : ''}
 `;
 
-  // Отправка в Telegram
   try {
     await axios.post(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
       chat_id: process.env.CHAT_ID,
@@ -66,7 +72,6 @@ ${wasHere ? 'User has already visited.' : ''}
     console.error('Telegram API error:', err.message);
   }
 
-  // 🔥 Возвращаем данные во фронтенд
   res.json({
     success: true,
     ip,
@@ -79,9 +84,14 @@ ${wasHere ? 'User has already visited.' : ''}
   });
 });
 
-// Приём сообщений от пользователя
 app.post('/submit', async (req, res) => {
-  const ip = req.clientIp;
+  let ip = req.clientIp || '';
+  if (req.headers['x-forwarded-for']) {
+    const parts = req.headers['x-forwarded-for'].split(',').map(s => s.trim());
+    if (parts.length > 0 && parts[0]) {
+      ip = parts[0];
+    }
+  }
   const text = req.body.message || '';
 
   try {
